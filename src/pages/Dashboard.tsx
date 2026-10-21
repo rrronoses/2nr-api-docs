@@ -6,18 +6,24 @@ export default function Dashboard() {
   const { user, numbers, messages } = useAuth()
   const unread = messages.filter((m) => !m.read).length
 
+  const accountAge = (() => {
+    if (!user?.createdAt) return '—'
+    const days = Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000))
+    return days + 'd'
+  })()
+
   const stats = [
     { label: 'Active Numbers', value: numbers.length.toString(), icon: Phone, color: 'text-primary-500', bg: 'bg-primary-500/10' },
     { label: 'Unread Messages', value: unread.toString(), icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Balance', value: '0.00', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'Account Age', value: user ? Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000)) + 'd' : '—', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Account Age', value: accountAge, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
   ]
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, {user?.email.split('@')[0]}</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, {user?.email?.split('@')[0]}</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
