@@ -1,4 +1,6 @@
-const BASE = 'https://api.2nr.xyz'
+// Use same-origin proxy to avoid CORS
+// Browser → /api/... → Cloudflare Function → https://api.2nr.xyz/...
+const BASE = '/api'
 
 export type ApiResult<T = any> = {
   ok: boolean
@@ -24,15 +26,13 @@ async function request<T = any>(
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json; charset=UTF-8',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     }
 
     const token = getToken()
     if (opts.auth && token) {
-      // API uses cookie-style token in Cookie header
-      headers['Cookie'] = `token=${token}; x-app-version=52`
-      // Some setups also accept Authorization
       headers['x-auth-token'] = token
+      headers['Cookie'] = `token=${token}; x-app-version=52`
     }
 
     const res = await fetch(`${BASE}${path}`, {
@@ -42,7 +42,7 @@ async function request<T = any>(
       credentials: 'include',
     })
 
-    // Capture Set-Cookie token if present (browser may hide it)
+    // Try to capture token from response headers
     const setCookie = res.headers.get('set-cookie')
     if (setCookie) {
       const match = setCookie.match(/token=([^;]+)/)
@@ -66,16 +66,17 @@ async function request<T = any>(
       return { ok: false, error: errMsg, status: res.status, data }
     }
 
-    // Some endpoints return token inside body
+    // Token inside body
     if (data?.token) setToken(data.token)
     if (data?.result?.token) setToken(data.result.token)
+    if (Array.isArray(data) && data[0]?.token) setToken(data[0].token)
 
     return { ok: true, data, status: res.status }
   } catch (e: any) {
     return {
       ok: false,
       error: e?.message?.includes('Failed to fetch')
-        ? 'Network error or CORS blocked. The API may not allow browser requests from this domain.'
+        ? 'Network error. Please check your connection and try again.'
         : e?.message || 'Network error',
     }
   }
@@ -84,32 +85,48 @@ async function request<T = any>(
 // ── Auth ──────────────────────────────────────────────
 
 export async function apiRegister(email: string, password: string) {
-  return request('/auth/register', {
-    id: 103,
-    email,
-    password,
-    terms_version: '1',
-  }, { auth: false })
+  return request(
+    '/auth/register',
+    {
+      id: 103,
+      email,
+      password,
+      terms_version: '1',
+    },
+    { auth: false }
+  )
 }
 
 export async function apiLogin(email: string, password: string) {
-  return request('/auth/login', {
-    id: 101,
-    email,
-    password,
-    language: 'en',
-  }, { auth: false })
+  return request(
+    '/auth/login',
+    {
+      id: 101,
+      email,
+      password,
+      language: 'en',
+    },
+    { auth: false }
+  )
 }
 
 export async function apiConfirmEmail(email: string, token: string) {
-  return request('/auth/confirm', {
-    id: 104,
-    email,
-    token,
-  }, { auth: false })
+  return request(
+    '/auth/confirm',
+    {
+      id: 104,
+      email,
+      token,
+    },
+    { auth: false }
+  )
 }
 
-export async function apiChangePassword(password: string, password_confirm: string, old_password: string) {
+export async function apiChangePassword(
+  password: string,
+  password_confirm: string,
+  old_password: string
+) {
   return request('/auth/password', {
     id: 105,
     password,
