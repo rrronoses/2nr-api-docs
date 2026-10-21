@@ -1,5 +1,4 @@
-// Use same-origin proxy to avoid CORS
-// Browser → /api/... → Cloudflare Function → https://api.2nr.xyz/...
+// Same-origin proxy: /api/* → Cloudflare Function → api.2nr.xyz
 const BASE = '/api'
 
 export type ApiResult<T = any> = {
@@ -7,6 +6,7 @@ export type ApiResult<T = any> = {
   data?: T
   error?: string
   status?: number
+  code?: string
 }
 
 function getToken(): string | null {
@@ -32,7 +32,6 @@ async function request<T = any>(
     const token = getToken()
     if (opts.auth && token) {
       headers['x-auth-token'] = token
-      headers['Cookie'] = `token=${token}; x-app-version=52`
     }
 
     const res = await fetch(`${BASE}${path}`, {
@@ -42,7 +41,10 @@ async function request<T = any>(
       credentials: 'include',
     })
 
-    // Try to capture token from response headers
+    // Token from custom header (set by proxy)
+    const headerToken = res.headers.get('x-auth-token')
+    if (headerToken) setToken(headerToken)
+
     const setCookie = res.headers.get('set-cookie')
     if (setCookie) {
       const match = setCookie.match(/token=([^;]+)/)
@@ -51,6 +53,18 @@ async function request<T = any>(
 
     let data: any = null
     const text = await res.text()
+
+    // Never show raw HTML to the user
+    if (text.trim().startsWith('<!') || text.includes('Attention Required') || text.includes('cf-error')) {
+      return {
+        ok: false,
+        error:
+          'The API is protected by Cloudflare and is blocking requests from this website. Please use the official 2nr Android app, or try again later.',
+        status: res.status,
+        code: 'CF_BLOCKED',
+      }
+    }
+
     try {
       data = text ? JSON.parse(text) : null
     } catch {
@@ -61,12 +75,17 @@ async function request<T = any>(
       const errMsg =
         data?.error ||
         data?.message ||
-        (typeof data === 'string' ? data : null) ||
+        (typeof data === 'string' && data.length < 200 ? data : null) ||
         `Request failed (${res.status})`
-      return { ok: false, error: errMsg, status: res.status, data }
+      return {
+        ok: false,
+        error: errMsg,
+        status: res.status,
+        code: data?.code,
+        data,
+      }
     }
 
-    // Token inside body
     if (data?.token) setToken(data.token)
     if (data?.result?.token) setToken(data.result.token)
     if (Array.isArray(data) && data[0]?.token) setToken(data[0].token)
@@ -82,17 +101,10 @@ async function request<T = any>(
   }
 }
 
-// ── Auth ──────────────────────────────────────────────
-
 export async function apiRegister(email: string, password: string) {
   return request(
     '/auth/register',
-    {
-      id: 103,
-      email,
-      password,
-      terms_version: '1',
-    },
+    { id: 103, email, password, terms_version: '1' },
     { auth: false }
   )
 }
@@ -100,12 +112,7 @@ export async function apiRegister(email: string, password: string) {
 export async function apiLogin(email: string, password: string) {
   return request(
     '/auth/login',
-    {
-      id: 101,
-      email,
-      password,
-      language: 'en',
-    },
+    { id: 101, email, password, language: 'en' },
     { auth: false }
   )
 }
@@ -113,11 +120,7 @@ export async function apiLogin(email: string, password: string) {
 export async function apiConfirmEmail(email: string, token: string) {
   return request(
     '/auth/confirm',
-    {
-      id: 104,
-      email,
-      token,
-    },
+    { id: 104, email, token },
     { auth: false }
   )
 }
@@ -141,8 +144,6 @@ export async function apiLogout() {
   return res
 }
 
-// ── User ──────────────────────────────────────────────
-
 export async function apiGetUserDetails() {
   return request('/user/getUserDetails', { id: 203 })
 }
@@ -150,8 +151,6 @@ export async function apiGetUserDetails() {
 export async function apiDeactivate() {
   return request('/user/deactivate', { id: 206 })
 }
-
-// ── Numbers ───────────────────────────────────────────
 
 export async function apiGetUserNumbers() {
   return request('/numbers/getUserNumbers', { id: 302 })
@@ -186,8 +185,6 @@ export async function apiRemoveNumber(number_id: number) {
   })
 }
 
-// ── SMS ───────────────────────────────────────────────
-
 export async function apiGetUnreadCount() {
   return request('/sms/getUnreadMessageCount', { id: 411 })
 }
@@ -209,8 +206,6 @@ export async function apiMarkAsRead(message_ids: (string | number)[]) {
     query: { message_id: message_ids },
   })
 }
-
-// ── Shop ──────────────────────────────────────────────
 
 export async function apiGetShopItems() {
   return request('/shop/getShopItems', { id: 507 })
