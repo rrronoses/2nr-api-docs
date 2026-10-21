@@ -1,139 +1,122 @@
 /**
- * Cloudflare Pages Function – proxies /api/* → https://api.2nr.xyz/*
+ * Cloudflare Pages Function
+ * Bound automatically to: https://2nr.pages.dev/api/*
+ * Proxies to: https://api.2nr.xyz/*
  */
 
-interface Env {}
+export const onRequest = async (context: EventContext<any, any, any>) => {
+  const request = context.request
+  const url = new URL(request.url)
 
-export const onRequest: PagesFunction<Env> = async (context) => {
-  const url = new URL(context.request.url)
-
-  // Preflight
-  if (context.request.method === 'OPTIONS') {
+  // CORS preflight
+  if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
-      headers: corsHeaders(url.origin),
+      headers: {
+        'Access-Control-Allow-Origin': url.origin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, x-auth-token, Authorization, Cookie',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Max-Age': '86400',
+      },
     })
   }
 
-  const targetPath = url.pathname.replace(/^\/api/, '') || '/'
-  const targetUrl = `https://api.2nr.xyz${targetPath}${url.search}`
+  // /api/auth/login  →  https://api.2nr.xyz/auth/login
+  const path = url.pathname.replace(/^\/api/, '') || '/'
+  const target = `https://api.2nr.xyz${path}${url.search}`
 
-  // Build headers that closely match the official Android app (from HAR)
+  // Headers matching official Android app (from HAR captures)
   const headers = new Headers()
   headers.set('User-Agent', 'okhttp/4.10.0')
   headers.set('Accept', 'application/json')
   headers.set('Accept-Encoding', 'gzip')
   headers.set('Content-Type', 'application/json; charset=UTF-8')
-  headers.set('Connection', 'Keep-Alive')
 
-  // Forward auth token
-  const incomingCookie = context.request.headers.get('cookie') || ''
-  const authToken =
-    context.request.headers.get('x-auth-token') ||
-    extractTokenFromCookie(incomingCookie)
+  const token =
+    request.headers.get('x-auth-token') ||
+    (request.headers.get('cookie') || '').match(/(?:^|;\s*)token=([^;]+)/)?.[1]
 
-  if (authToken) {
-    headers.set('Cookie', `token=${authToken}; x-app-version=52`)
-    headers.set('x-auth-token', authToken)
+  if (token) {
+    headers.set('Cookie', `token=${token}; x-app-version=52`)
+    headers.set('x-auth-token', token)
   }
 
   let body: ArrayBuffer | undefined
-  if (context.request.method !== 'GET' && context.request.method !== 'HEAD') {
-    body = await context.request.arrayBuffer()
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    body = await request.arrayBuffer()
   }
 
   try {
-    const upstream = await fetch(targetUrl, {
-      method: context.request.method,
+    const upstream = await fetch(target, {
+      method: request.method,
       headers,
-      body: body && body.byteLength > 0 ? body : undefined,
+      body: body && body.byteLength ? body : undefined,
       redirect: 'manual',
-      // cf options – try to reduce bot score issues
-      cf: {
-        cacheTtl: 0,
-        cacheEverything: false,
-      },
     })
 
-    const contentType = upstream.headers.get('content-type') || ''
-    const resBody = await upstream.arrayBuffer()
-    const textPreview = new TextDecoder().decode(resBody.slice(0, 500))
+    const raw = await upstream.arrayBuffer()
+    const preview = new TextDecoder().decode(raw.slice(0, 800))
+    const ct = upstream.headers.get('content-type') || ''
 
-    // Detect Cloudflare block / challenge HTML pages
+    // Cloudflare WAF block page from api.2nr.xyz
     if (
-      contentType.includes('text/html') ||
-      textPreview.includes('Attention Required') ||
-      textPreview.includes('you have been blocked') ||
-      textPreview.includes('cf-error-details') ||
-      textPreview.includes('Just a moment')
+      ct.includes('text/html') ||
+      preview.includes('Attention Required') ||
+      preview.includes('you have been blocked') ||
+      preview.includes('cf-error-details') ||
+      preview.includes('Just a moment') ||
+      preview.includes('cf-browser-verification')
     ) {
-      return json(
+      return Response.json(
         {
           error:
-            'API blocked by Cloudflare protection. The server is rejecting requests from this hosting environment (datacenter IP). The official mobile app may still work.',
-          code: 'CF_BLOCKED',
-          status: upstream.status,
+            'api.2nr.xyz Cloudflare WAF blocked this request (datacenter IP). Official Android app still works on mobile networks.',
+          code: 'CF_WAF_BLOCKED',
+          ray: preview.match(/Cloudflare Ray ID:.*?([a-f0-9]{16})/i)?.[1] || null,
         },
-        403,
-        url.origin
+        {
+          status: 403,
+          headers: {
+            'Access-Control-Allow-Origin': url.origin,
+            'Access-Control-Allow-Credentials': 'true',
+          },
+        }
       )
     }
 
-    const resHeaders = new Headers()
-    resHeaders.set('Content-Type', contentType || 'application/json; charset=utf-8')
-    Object.entries(corsHeaders(url.origin)).forEach(([k, v]) => resHeaders.set(k, v))
+    const out = new Headers()
+    out.set('Content-Type', ct.includes('json') ? ct : 'application/json; charset=utf-8')
+    out.set('Access-Control-Allow-Origin', url.origin)
+    out.set('Access-Control-Allow-Credentials', 'true')
+    out.set('Access-Control-Expose-Headers', 'x-auth-token, set-cookie')
 
-    // Forward useful headers
     const setCookie = upstream.headers.get('set-cookie')
     if (setCookie) {
-      resHeaders.set('Set-Cookie', setCookie)
-      // Also expose token in a readable header for the SPA
-      const match = setCookie.match(/token=([^;]+)/)
-      if (match) {
-        resHeaders.set('x-auth-token', match[1])
-        resHeaders.set('Access-Control-Expose-Headers', 'x-auth-token, set-cookie')
-      }
+      out.set('Set-Cookie', setCookie)
+      const m = setCookie.match(/token=([^;]+)/)
+      if (m) out.set('x-auth-token', m[1])
     }
 
-    return new Response(resBody, {
+    return new Response(raw, {
       status: upstream.status,
       statusText: upstream.statusText,
-      headers: resHeaders,
+      headers: out,
     })
-  } catch (err: any) {
-    return json(
+  } catch (e: any) {
+    return Response.json(
       {
-        error: 'Proxy error',
-        message: err?.message || 'Failed to reach api.2nr.xyz',
+        error: 'Proxy failed to reach api.2nr.xyz',
+        message: e?.message || 'Unknown error',
         code: 'PROXY_ERROR',
       },
-      502,
-      url.origin
+      {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': url.origin,
+          'Access-Control-Allow-Credentials': 'true',
+        },
+      }
     )
   }
-}
-
-function extractTokenFromCookie(cookie: string): string | null {
-  const match = cookie.match(/(?:^|;\s*)token=([^;]+)/)
-  return match ? match[1] : null
-}
-
-function corsHeaders(origin: string): Record<string, string> {
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-auth-token, Authorization, Cookie',
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Max-Age': '86400',
-  }
-}
-
-function json(data: unknown, status: number, origin: string) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      ...corsHeaders(origin),
-    },
-  })
 }

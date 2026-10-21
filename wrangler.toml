@@ -1,3 +1,6 @@
 name = "2nr"
 pages_build_output_dir = "dist"
-compatibility_date = "2024-09-23"
+compatibility_date = "2024-11-01"
+
+# Pages Functions in /functions are auto-bound to this project domain:
+# https://2nr.pages.dev/api/*
