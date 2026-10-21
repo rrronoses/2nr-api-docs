@@ -7,45 +7,44 @@ export default function Dashboard() {
   const unread = messages.filter((m) => !m.read).length
 
   const stats = [
-    { label: 'Active Numbers', value: numbers.length.toString(), icon: Phone, color: 'text-primary-400', bg: 'bg-primary-500/10' },
-    { label: 'Unread Messages', value: unread.toString(), icon: MessageSquare, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: 'Balance', value: '0.00', icon: Wallet, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Account Age', value: user ? Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000)) + 'd' : '—', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'Active Numbers', value: numbers.length.toString(), icon: Phone, color: 'text-primary-500', bg: 'bg-primary-500/10' },
+    { label: 'Unread Messages', value: unread.toString(), icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Balance', value: '0.00', icon: Wallet, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Account Age', value: user ? Math.max(1, Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000)) + 'd' : '—', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
   ]
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Welcome back, {user?.email.split('@')[0]}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, {user?.email.split('@')[0]}</p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {stats.map((s) => (
-          <div key={s.label} className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 hover:border-slate-700 transition">
+          <div key={s.label} className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-slate-700 transition">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-slate-400">{s.label}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{s.label}</span>
               <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center`}>
                 <s.icon size={15} className={s.color} />
               </div>
             </div>
-            <div className="text-2xl font-bold text-white">{s.value}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Numbers preview */}
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
-            <h2 className="font-semibold text-white">Your Numbers</h2>
-            <Link to="/numbers" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900 dark:text-white">Your Numbers</h2>
+            <Link to="/numbers" className="text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 flex items-center gap-1">
               View all <ArrowRight size={12} />
             </Link>
           </div>
           {numbers.length === 0 ? (
             <div className="p-8 text-center">
-              <Phone size={28} className="mx-auto text-slate-600 mb-3" />
+              <Phone size={28} className="mx-auto text-slate-400 dark:text-slate-600 mb-3" />
               <p className="text-slate-500 text-sm mb-4">No numbers yet</p>
               <Link
                 to="/numbers"
@@ -55,44 +54,43 @@ export default function Dashboard() {
               </Link>
             </div>
           ) : (
-            <div className="divide-y divide-slate-800/80">
+            <div className="divide-y divide-slate-200 dark:divide-slate-800/80">
               {numbers.slice(0, 3).map((n) => (
                 <div key={n.id} className="px-5 py-3.5 flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-white tracking-wide">
+                    <div className="font-medium text-slate-900 dark:text-white tracking-wide">
                       {n.number.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')}
                     </div>
                     <div className="text-xs text-slate-500">{n.name}</div>
                   </div>
-                  <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Messages preview */}
-        <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
-            <h2 className="font-semibold text-white">Recent Messages</h2>
-            <Link to="/messages" className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900 dark:text-white">Recent Messages</h2>
+            <Link to="/messages" className="text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 flex items-center gap-1">
               View all <ArrowRight size={12} />
             </Link>
           </div>
           {messages.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">
-              No messages yet
-            </div>
+            <div className="p-8 text-center text-slate-500 text-sm">No messages yet</div>
           ) : (
-            <div className="divide-y divide-slate-800/80">
+            <div className="divide-y divide-slate-200 dark:divide-slate-800/80">
               {messages.slice(0, 3).map((m) => (
                 <Link
                   key={m.id}
                   to={`/messages/${m.id}`}
-                  className="block px-5 py-3.5 hover:bg-slate-800/30 transition"
+                  className="block px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-white text-sm">{m.from}</span>
+                    <span className={`font-medium text-sm ${m.read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-900 dark:text-white'}`}>
+                      {m.from}
+                    </span>
                     {!m.read && <span className="w-2 h-2 rounded-full bg-primary-500" />}
                   </div>
                   <p className="text-xs text-slate-500 truncate">{m.body}</p>

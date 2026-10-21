@@ -32,8 +32,8 @@ export default function Numbers() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Numbers</h1>
-          <p className="text-slate-400 mt-1">Manage your virtual mobile numbers</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Numbers</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your virtual mobile numbers</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -48,7 +48,7 @@ export default function Numbers() {
         {numbers.map((n) => (
           <div
             key={n.id}
-            className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 flex items-center justify-between hover:border-slate-700 transition group"
+            className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-700 transition group"
           >
             <div className="flex items-center gap-4">
               <div
@@ -58,7 +58,7 @@ export default function Numbers() {
                 <Phone size={20} style={{ color: n.color }} />
               </div>
               <div>
-                <div className="font-semibold text-white text-lg tracking-wide">
+                <div className="font-semibold text-slate-900 dark:text-white text-lg tracking-wide">
                   {formatNumber(n.number)}
                 </div>
                 <div className="text-sm text-slate-500 mt-0.5">
@@ -75,14 +75,14 @@ export default function Numbers() {
             <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition">
               <button
                 onClick={() => handleCopy(n.id, n.number)}
-                className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 title="Copy number"
               >
-                {copiedId === n.id ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                {copiedId === n.id ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
               </button>
               <button
                 onClick={() => handleDelete(n.id)}
-                className="p-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
                 title="Delete number"
               >
                 <Trash2 size={16} />
@@ -92,9 +92,9 @@ export default function Numbers() {
         ))}
 
         {numbers.length === 0 && (
-          <div className="text-center py-20 bg-slate-900/30 border border-dashed border-slate-800 rounded-2xl">
-            <Phone size={40} className="mx-auto mb-4 text-slate-600" />
-            <p className="text-slate-400 mb-5">No numbers yet</p>
+          <div className="text-center py-20 bg-slate-100/50 dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl">
+            <Phone size={40} className="mx-auto mb-4 text-slate-400 dark:text-slate-600" />
+            <p className="text-slate-500 mb-5">No numbers yet</p>
             <button
               onClick={() => setShowModal(true)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition"
@@ -105,25 +105,24 @@ export default function Numbers() {
         )}
       </div>
 
-      {/* Reserve Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-              <h3 className="font-semibold text-white">Reserve a Number</h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="font-semibold text-slate-900 dark:text-white">Reserve a Number</h3>
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800">
                 <X size={18} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1.5">Display name (optional)</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-400 mb-1.5">Display name (optional)</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. WhatsApp, Banking..."
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-primary-500 text-white text-sm placeholder:text-slate-600 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:border-primary-500 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 transition"
                   autoFocus
                 />
               </div>
