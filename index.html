@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2nr API Documentation – Reverse Engineered</title>
+  <meta name="description" content="Complete reverse-engineered documentation of the 2nr (drugi-numer) virtual number & SIP softphone API based on real network captures." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: { 500: '#E63147', 600: '#c91f35', 700: '#a8182c' },
+            dark: { 800: '#0f172a', 900: '#020617', 950: '#01040f' }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    pre { overflow-x: auto; }
+    .sidebar-link.active { color: #E63147; border-left-color: #E63147; }
+    .prose pre { background: #0f172a; }
+  </style>
+</head>
+<body class="bg-dark-950 text-slate-200 antialiased">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-50 border-b border-slate-800 bg-dark-950/90 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center font-bold text-white text-sm">2nr</div>
+        <span class="font-semibold text-white">API Docs</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">Reverse Engineered</span>
+      </div>
+      <div class="flex items-center gap-4 text-sm">
+        <a href="https://github.com/rrronoses/2nr-api-docs" target="_blank" class="text-slate-400 hover:text-white transition">GitHub</a>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-500 text-xs">Based on HAR captures • Oct 2026</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-10">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block w-56 shrink-0">
+      <nav class="sticky top-24 space-y-1 text-sm">
+        <a href="#overview" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Overview</a>
+        <a href="#architecture" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Architecture</a>
+        <a href="#auth" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Authentication</a>
+        <a href="#config" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Config & Action IDs</a>
+        <a href="#numbers" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Numbers API</a>
+        <a href="#sms" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">SMS API</a>
+        <a href="#user" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">User & Shop</a>
+        <a href="#security" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Security Notes</a>
+        <a href="#flows" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Observed Flows</a>
+        <a href="#samples" class="sidebar-link block py-1.5 pl-3 border-l-2 border-transparent text-slate-400 hover:text-white hover:border-slate-600 transition">Data Samples</a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 min-w-0 space-y-16">
+
+      <!-- Overview -->
+      <section id="overview">
+        <h1 class="text-3xl font-bold text-white mb-4">2nr API Documentation</h1>
+        <p class="text-lg text-slate-300 leading-relaxed mb-6">
+          Complete reverse-engineered documentation of the <strong class="text-white">2nr</strong> (also known as <em>drugi-numer</em>) virtual number & SIP softphone service.
+          All information is derived from real network traffic captures (HAR files) of the official Android application <code class="text-primary-500">pl.rs.sip.softphone.newapp</code> version <code>2.1.18-prod</code>.
+        </p>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div class="bg-dark-800 border border-slate-800 rounded-xl p-4">
+            <div class="text-xs text-slate-500 mb-1">Base URL</div>
+            <div class="font-mono text-sm text-primary-500">https://api.2nr.xyz</div>
+          </div>
+          <div class="bg-dark-800 border border-slate-800 rounded-xl p-4">
+            <div class="text-xs text-slate-500 mb-1">Protocol</div>
+            <div class="font-mono text-sm">HTTP/2 + Cookie Auth</div>
+          </div>
+          <div class="bg-dark-800 border border-slate-800 rounded-xl p-4">
+            <div class="text-xs text-slate-500 mb-1">App Package</div>
+            <div class="font-mono text-sm text-xs">pl.rs.sip.softphone.newapp</div>
+          </div>
+        </div>
+
+        <div class="bg-amber-950/40 border border-amber-800/50 rounded-xl p-4 text-sm text-amber-200">
+          <strong>Disclaimer:</strong> This documentation is for educational and research purposes only.
+          It is based on publicly observable network traffic from the official client.
+          Do not use this information to abuse the service or violate its terms of service.
+        </div>
+      </section>
+
+      <!-- Architecture -->
+      <section id="architecture">
+        <h2 class="text-2xl font-bold text-white mb-4">Architecture</h2>
+        <p class="text-slate-300 mb-4">The API uses an unusual design: almost every request is a <code class="text-primary-500">POST</code> to a service path, and the actual operation is identified by a numeric <strong>action ID</strong> inside the JSON body.</p>
+
+        <div class="bg-dark-800 border border-slate-800 rounded-xl p-5 font-mono text-sm overflow-x-auto">
+          <div class="text-slate-500">// Typical request shape</div>
+          <pre class="text-slate-200">POST /numbers/reserveNumber HTTP/2
+Host: api.2nr.xyz
+Cookie: token=&lt;session_token&gt;; x-app-version=52
+Content-Type: application/json
+
+{
+  "query": { ...parameters... },
+  "id": 301          // ← Action ID
+}</pre>
+        </div>
+
+        <p class="mt-4 text-slate-300">The full mapping of action IDs is returned by the <code class="text-primary-500">GET /config</code> endpoint on app startup.</p>
+      </section>
+
+      <!-- Authentication -->
+      <section id="auth">
+        <h2 class="text-2xl font-bold text-white mb-4">Authentication</h2>
+        <p class="text-slate-300 mb-4">Authentication is cookie-based. After successful login or registration the server sets a long hex session token.</p>
+
+        <div class="bg-dark-800 border border-slate-800 rounded-xl p-5 mb-4">
+          <div class="text-xs text-slate-500 mb-2">Cookie</div>
+          <code class="font-mono text-sm text-primary-500">token=&lt;64-char hex&gt;; x-app-version=52</code>
+        </div>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Login (Action 101)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "email": "user@example.com",
+  "password": "ComplexPass1!",
+  "imei": null,
+  "main_number": "...",
+  "language": "en"
+}</pre>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Password Rules</h3>
+        <ul class="list-disc list-inside text-slate-300 space-y-1">
+          <li>Minimum 6 characters</li>
+          <li>Must contain uppercase letter</li>
+          <li>Must contain lowercase letter</li>
+          <li>Must contain digit</li>
+          <li>Must contain special character: <code>?!@#$%^&*()<>+{}|_-</code></li>
+        </ul>
+      </section>
+
+      <!-- Config -->
+      <section id="config">
+        <h2 class="text-2xl font-bold text-white mb-4">Config & Action IDs</h2>
+        <p class="text-slate-300 mb-4">The single most important endpoint is <code class="text-primary-500">GET /config</code>. It returns a large JSON object that defines every available action, its service, validator schema, and whether login is required.</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="text-xs text-slate-500 uppercase border-b border-slate-800">
+              <tr>
+                <th class="py-3 pr-4">ID</th>
+                <th class="py-3 pr-4">Service</th>
+                <th class="py-3 pr-4">Action</th>
+                <th class="py-3">Login</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">100</td><td class="pr-4">auth</td><td class="pr-4">me</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">101</td><td class="pr-4">auth</td><td class="pr-4">login</td><td>no</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">103</td><td class="pr-4">auth</td><td class="pr-4">register</td><td>no</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">203</td><td class="pr-4">user</td><td class="pr-4">getUserDetails</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">301</td><td class="pr-4">numbers</td><td class="pr-4">reserveNumber</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">302</td><td class="pr-4">numbers</td><td class="pr-4">getUserNumbers</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">304</td><td class="pr-4">numbers</td><td class="pr-4">removeNumber</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">400</td><td class="pr-4">sms</td><td class="pr-4">get</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">409</td><td class="pr-4">sms</td><td class="pr-4">get (filtered)</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">410</td><td class="pr-4">sms</td><td class="pr-4">markAsRead</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">411</td><td class="pr-4">sms</td><td class="pr-4">getUnreadMessageCount</td><td>yes</td></tr>
+              <tr><td class="py-2.5 pr-4 font-mono text-primary-500">507</td><td class="pr-4">shop</td><td class="pr-4">getShopItems</td><td>yes</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Numbers -->
+      <section id="numbers">
+        <h2 class="text-2xl font-bold text-white mb-4">Numbers API</h2>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Reserve Number (301)</h3>
+        <p class="text-slate-300 mb-3">This is the core endpoint. Requires a valid Play Integrity / device attestation token.</p>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto mb-4">{
+  "query": {
+    "availability_days": [1,2,3,4,5,6,7],
+    "color": "#E63147",
+    "hour_from": null,
+    "hour_to": null,
+    "integrity_token": "&lt;JWE Play Integrity token&gt;",
+    "marketing": true,
+    "name": "MyNumber",
+    "nonce": "base64-nonce",
+    "number_id": 147446
+  },
+  "id": 301
+}</pre>
+
+        <p class="text-slate-300 mb-2">Successful response:</p>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "success": true,
+  "password": "a412471c2c86f5cf95c987106dc6ee0bda99643ad18d1f5c5fa28e08550a95b2"
+}</pre>
+
+        <h3 class="text-lg font-semibold text-white mt-8 mb-2">Get User Numbers (302)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "id": 302
+}</pre>
+        <p class="text-slate-400 text-sm mt-2">Returns array of owned numbers with reservation window (typically 3 days), color, name, and the password hash.</p>
+
+        <h3 class="text-lg font-semibold text-white mt-8 mb-2">Remove Number (304)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "query": { "number_id": 20987 },
+  "id": 304
+}</pre>
+      </section>
+
+      <!-- SMS -->
+      <section id="sms">
+        <h2 class="text-2xl font-bold text-white mb-4">SMS API</h2>
+
+        <h3 class="text-lg font-semibold text-white mt-4 mb-2">Unread Count (411)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "id": 411
+}
+// → { "result": { "104354": 1, "147446": 0 }, "success": true }</pre>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Get Messages (400 / 409)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">// All messages
+{ "id": 400 }
+
+// Filtered
+{
+  "query": { "number_id": 104354, "phone": "IMO" },
+  "id": 409
+}</pre>
+
+        <p class="text-slate-300 mt-4 mb-2">Example received message:</p>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "id": "82674150",
+  "number_id": 104354,
+  "phone": "IMO",
+  "body": "&lt;#&gt; Your imo verification code is 2584.\nDO NOT share...",
+  "outgoing": false,
+  "created_at": "2026-10-21T07:06:01.015Z"
+}</pre>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Mark as Read (410)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "query": { "message_id": [82674150] },
+  "id": 410
+}</pre>
+      </section>
+
+      <!-- User & Shop -->
+      <section id="user">
+        <h2 class="text-2xl font-bold text-white mb-4">User & Shop</h2>
+
+        <h3 class="text-lg font-semibold text-white mt-4 mb-2">Get User Details (203)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "id": 203
+}</pre>
+        <p class="text-slate-400 text-sm mt-2">Returns profile, funds, verification status, and internal pricing.</p>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Internal Prices</h3>
+        <ul class="text-slate-300 space-y-1">
+          <li>SMS → <code>1000</code></li>
+          <li>MMS → <code>5000</code></li>
+          <li>Activation → <code>290000</code></li>
+          <li>Call (per second) → <code>17</code></li>
+        </ul>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Shop Items (507)</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">[
+  { "id": 1, "name": "[PL] na miesiąc", "price": 50000, "unit": "month", "quantity": 1 },
+  { "id": 2, "name": "[PL] na 3 miesiące", "price": 100000, "unit": "month", "quantity": 3 },
+  { "id": 3, "name": "[ENG] for one month", "price": 50000, "unit": "month", "quantity": 1 },
+  { "id": 4, "name": "[ENG] for three months", "price": 100000, "unit": "month", "quantity": 3 }
+]</pre>
+      </section>
+
+      <!-- Security -->
+      <section id="security">
+        <h2 class="text-2xl font-bold text-white mb-4">Security Notes</h2>
+        <ul class="space-y-3 text-slate-300">
+          <li><strong class="text-white">Play Integrity required</strong> – Number reservation demands a valid device attestation token. Emulators or rooted devices are likely blocked.</li>
+          <li><strong class="text-white">Firebase blocked</strong> – The official Firebase API key returns <code>API_KEY_ANDROID_APP_BLOCKED</code> for this package.</li>
+          <li><strong class="text-white">Session tokens</strong> are long-lived hex strings. Protect them carefully.</li>
+          <li><strong class="text-white">Number passwords</strong> are returned as SHA-like hashes and appear to be the SIP credentials.</li>
+          <li>Heavy Facebook App Events tracking is present for analytics.</li>
+        </ul>
+      </section>
+
+      <!-- Flows -->
+      <section id="flows">
+        <h2 class="text-2xl font-bold text-white mb-4">Observed User Flows</h2>
+
+        <div class="space-y-6">
+          <div class="bg-dark-800 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-semibold text-white mb-3">New Account + First Number</h3>
+            <ol class="list-decimal list-inside text-slate-300 space-y-1 text-sm">
+              <li>App start → Facebook events + Crashlytics</li>
+              <li>Register / Login → receive session token</li>
+              <li><code>getUserDetails</code> (203)</li>
+              <li><code>reserveNumber</code> (301) with integrity token</li>
+              <li><code>getUserNumbers</code> (302) → number appears (3-day window)</li>
+              <li>Poll SMS endpoints</li>
+            </ol>
+          </div>
+
+          <div class="bg-dark-800 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-semibold text-white mb-3">Receive Verification SMS</h3>
+            <ol class="list-decimal list-inside text-slate-300 space-y-1 text-sm">
+              <li>Poll <code>getUnreadMessageCount</code> (411)</li>
+              <li>Call <code>sms/get</code> (400 or 409)</li>
+              <li>Extract code from message body</li>
+              <li><code>markAsRead</code> (410)</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- Samples -->
+      <section id="samples">
+        <h2 class="text-2xl font-bold text-white mb-4">Observed Data Samples</h2>
+
+        <h3 class="text-lg font-semibold text-white mt-4 mb-2">Sample User</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "id": 19202010,
+  "email": "pinkjaquith@maxxspace.com",
+  "status": 1,
+  "funds": 0,
+  "role_id": 1,
+  "verified": 0,
+  "created_at": "2026-10-21T07:39:52.944Z"
+}</pre>
+
+        <h3 class="text-lg font-semibold text-white mt-6 mb-2">Sample Reserved Number</h3>
+        <pre class="bg-dark-800 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-200 overflow-x-auto">{
+  "user_id": 19202010,
+  "number_id": 150911,
+  "number": "459197008",
+  "name": "Gag",
+  "color": "#E63147",
+  "reservation_from": "2026-10-21T07:40:17.000Z",
+  "reservation_to": "2026-10-24T07:40:17.000Z",
+  "status": 1,
+  "password": "625c967274e09e0f4e1c19b6b57d6e045890f6bf3292e4eef18bc88c5ae71121"
+}</pre>
+      </section>
+
+      <!-- Footer -->
+      <footer class="border-t border-slate-800 pt-8 pb-16 text-center text-slate-500 text-sm">
+        <p>Documentation generated from real HAR captures of the official 2nr Android app.</p>
+        <p class="mt-2">Repository: <a href="https://github.com/rrronoses/2nr-api-docs" class="text-primary-500 hover:underline">github.com/rrronoses/2nr-api-docs</a></p>
+        <p class="mt-4 text-xs">For research & educational purposes only.</p>
+      </footer>
+
+    </main>
+  </div>
+
+  <script>
+    // Highlight active sidebar link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const links = document.querySelectorAll('.sidebar-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 100;
+        if (scrollY >= top) current = section.getAttribute('id');
+      });
+      links.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
