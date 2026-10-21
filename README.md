@@ -1,35 +1,49 @@
-# 2nr API Documentation
+# 2nr – Second Number (Web App)
 
-**Complete reverse-engineered documentation** of the 2nr (drugi-numer) virtual number & SIP softphone API.
+Complete modern web application built with **React + TypeScript + Vite + Tailwind CSS**.
 
-All information is derived from real network traffic captures (HAR files) of the official Android application `pl.rs.sip.softphone.newapp` (version 2.1.18-prod).
+Inspired by the real 2nr (drugi-numer) virtual number service, using realistic data and design patterns extracted from network captures.
 
-## Live Site
+## Features
 
-After connecting this repository to Cloudflare Pages, the documentation will be available at your Pages URL.
+- Beautiful landing page
+- Dashboard with stats
+- Numbers management (list, copy, remove)
+- SMS inbox with real message examples
+- User profile page
+- Fully typed with TypeScript
+- Responsive dark UI
 
-## Contents
+## Tech Stack
 
-- Overview of the API architecture
-- Authentication (cookie-based session tokens)
-- Full Action ID system + `/config` endpoint
-- Numbers API (reserve, list, remove)
-- SMS API (poll, filter, mark as read)
-- User details & Shop pricing
-- Security notes (Play Integrity, blocked Firebase)
-- Observed real-world flows and data samples
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Lucide Icons
 
-## Tech
+## Development
 
-- Pure static HTML + Tailwind CSS (CDN)
-- Ready for Cloudflare Pages (no build step required)
+```bash
+npm install
+npm run dev
+```
 
-## Disclaimer
+## Build for production
 
-This documentation is for **educational and research purposes only**.  
-It is based on publicly observable network traffic from the official client.  
-Do not use this information to abuse the service or violate its terms of service.
+```bash
+npm run build
+```
+
+The `dist/` folder is ready for Cloudflare Pages.
+
+## Deploy to Cloudflare Pages
+
+1. Connect this repository in Cloudflare Pages
+2. Build command: `npm run build`
+3. Output directory: `dist`
+4. Deploy
 
 ---
 
-Repository created from deep analysis of HAR captures (October 2026).
+Built from deep analysis of real HAR captures (October 2026).
