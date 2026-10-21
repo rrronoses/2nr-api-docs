@@ -1,10 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import * as api from '../api/client'
 
 export interface User {
   id: number
   email: string
   verified: boolean
-  createdAt: string
+  funds?: number
+  status?: number
+  createdAt?: string
+  role_id?: number
 }
 
 export interface NumberItem {
@@ -15,6 +19,7 @@ export interface NumberItem {
   reservationFrom: string
   reservationTo: string
   status: number
+  password?: string
 }
 
 export interface MessageItem {
@@ -32,32 +37,49 @@ interface AuthContextType {
   numbers: NumberItem[]
   messages: MessageItem[]
   loading: boolean
+  apiError: string | null
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   verifyEmail: (token: string) => Promise<{ success: boolean; error?: string }>
-  logout: () => void
+  logout: () => Promise<void>
   changePassword: (oldPass: string, newPass: string) => Promise<{ success: boolean; error?: string }>
-  deleteAccount: () => void
-  reserveNumber: (name: string) => void
-  deleteNumber: (id: number) => void
-  markMessageRead: (id: string) => void
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>
+  reserveNumber: (name: string) => Promise<{ success: boolean; error?: string }>
+  deleteNumber: (id: number) => Promise<{ success: boolean; error?: string }>
+  refreshNumbers: () => Promise<void>
+  refreshMessages: () => Promise<void>
+  markMessageRead: (id: string) => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const STORAGE_KEY = '2nr_app_data'
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+function mapNumbers(raw: any[]): NumberItem[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((n) => ({
+    id: n.number_id ?? n.id,
+    number: String(n.number || ''),
+    name: n.name || 'Number',
+    color: n.color || '#E63147',
+    reservationFrom: n.reservation_from || n.reservationFrom || '',
+    reservationTo: n.reservation_to || n.reservationTo || '',
+    status: n.status ?? 1,
+    password: n.password,
+  }))
 }
 
-function saveData(data: any) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+function mapMessages(raw: any): MessageItem[] {
+  const list = raw?.result || raw?.messages || (Array.isArray(raw) ? raw : [])
+  if (!Array.isArray(list)) return []
+  return list.map((m: any) => ({
+    id: String(m.id),
+    numberId: m.number_id ?? m.number?.number_id ?? 0,
+    number: m.number?.number || m.number || m.dest_number || '',
+    from: m.phone || m.from || m.dest_number || 'Unknown',
+    body: m.body || '',
+    createdAt: m.created_at || m.createdAt || new Date().toISOString(),
+    read: m.status === 1 || m.read === true,
+  }))
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -65,164 +87,200 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [numbers, setNumbers] = useState<NumberItem[]>([])
   const [messages, setMessages] = useState<MessageItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [password, setPassword] = useState('')
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
 
+  // Restore session on load
   useEffect(() => {
-    const data = loadData()
-    if (data?.user) {
-      setUser(data.user)
-      setNumbers(data.numbers || [])
-      setMessages(data.messages || [])
-      setPassword(data.password || '')
+    const token = localStorage.getItem('2nr_token')
+    if (token) {
+      refreshProfile().finally(() => setLoading(false))
+    } else {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
-  const persist = (u: User | null, nums: NumberItem[], msgs: MessageItem[], pass: string) => {
-    saveData({ user: u, numbers: nums, messages: msgs, password: pass })
+  const refreshProfile = async () => {
+    const res = await api.apiGetUserDetails()
+    if (res.ok && res.data) {
+      const u = Array.isArray(res.data) ? res.data[0] : res.data
+      if (u) {
+        setUser({
+          id: u.id,
+          email: u.email,
+          verified: u.verified === 1 || u.verified === true,
+          funds: u.funds,
+          status: u.status,
+          createdAt: u.created_at,
+          role_id: u.role_id,
+        })
+        setApiError(null)
+        await Promise.all([refreshNumbers(), refreshMessages()])
+        return
+      }
+    }
+    // Token invalid
+    if (res.status === 401 || res.status === 403) {
+      api.setToken(null)
+      setUser(null)
+    }
   }
 
-  const login = async (email: string, pass: string) => {
-    const data = loadData()
-    if (!data || data.user?.email !== email) {
-      return { success: false, error: 'Account not found. Please register first.' }
+  const refreshNumbers = async () => {
+    const res = await api.apiGetUserNumbers()
+    if (res.ok) {
+      setNumbers(mapNumbers(res.data))
     }
-    if (data.password !== pass) {
-      return { success: false, error: 'Incorrect password.' }
-    }
-    setUser(data.user)
-    setNumbers(data.numbers || [])
-    setMessages(data.messages || [])
-    setPassword(pass)
-    return { success: true }
   }
 
-  const register = async (email: string, pass: string) => {
-    const data = loadData()
-    if (data?.user?.email === email) {
-      return { success: false, error: 'Email already registered.' }
+  const refreshMessages = async () => {
+    const res = await api.apiGetMessages()
+    if (res.ok) {
+      setMessages(mapMessages(res.data))
+    }
+  }
+
+  const login = async (email: string, password: string) => {
+    const res = await api.apiLogin(email, password)
+    if (!res.ok) {
+      return { success: false, error: res.error || 'Login failed' }
     }
 
-    // Password complexity check (same as real API)
-    const hasUpper = /[A-Z]/.test(pass)
-    const hasLower = /[a-z]/.test(pass)
-    const hasDigit = /[0-9]/.test(pass)
-    const hasSpecial = /[?!@#$%^&*()<>+{}|_-]/.test(pass)
-    if (pass.length < 6 || !hasUpper || !hasLower || !hasDigit || !hasSpecial) {
+    // Try to extract token from response body
+    const token =
+      res.data?.token ||
+      res.data?.result?.token ||
+      res.data?.[0]?.token
+    if (token) api.setToken(token)
+
+    // Some APIs set cookie only — try profile fetch
+    await refreshProfile()
+
+    if (!localStorage.getItem('2nr_token') && !user) {
+      // Fallback: if body contains user, accept it
+      const u = Array.isArray(res.data) ? res.data[0] : res.data?.user || res.data
+      if (u?.email || u?.id) {
+        setUser({
+          id: u.id || 0,
+          email: u.email || email,
+          verified: true,
+          funds: u.funds,
+          createdAt: u.created_at,
+        })
+        return { success: true }
+      }
       return {
         success: false,
-        error: 'Password must be 6+ chars with uppercase, lowercase, number and special character.',
+        error:
+          'Login response received but no session token. The API may block browser requests (CORS) or require the official app.',
       }
     }
 
-    const newUser: User = {
-      id: Math.floor(Math.random() * 90000000) + 10000000,
-      email,
-      verified: false,
-      createdAt: new Date().toISOString(),
+    return { success: true }
+  }
+
+  const register = async (email: string, password: string) => {
+    const res = await api.apiRegister(email, password)
+    if (!res.ok) {
+      return { success: false, error: res.error || 'Registration failed' }
     }
 
-    // Simulate verification token
-    const token = btoa(email + ':' + Date.now()).replace(/=/g, '')
-    localStorage.setItem('2nr_verify_token', token)
+    setPendingEmail(email)
     localStorage.setItem('2nr_pending_email', email)
 
-    setUser(newUser)
-    setPassword(pass)
-    setNumbers([])
-    setMessages([])
-    persist(newUser, [], [], pass)
+    // If API returns token immediately (auto-login)
+    const token = res.data?.token || res.data?.result?.token
+    if (token) {
+      api.setToken(token)
+      await refreshProfile()
+    } else {
+      // Create a temporary unverified user state so VerifyEmail page works
+      setUser({
+        id: 0,
+        email,
+        verified: false,
+        createdAt: new Date().toISOString(),
+      })
+    }
 
     return { success: true }
   }
 
   const verifyEmail = async (token: string) => {
-    const stored = localStorage.getItem('2nr_verify_token')
-    if (!stored || stored !== token) {
-      return { success: false, error: 'Invalid or expired verification link.' }
+    const email = pendingEmail || localStorage.getItem('2nr_pending_email') || user?.email
+    if (!email) return { success: false, error: 'No pending email found.' }
+
+    const res = await api.apiConfirmEmail(email, token)
+    if (!res.ok) {
+      return { success: false, error: res.error || 'Verification failed' }
     }
 
-    if (!user) return { success: false, error: 'No pending registration.' }
-
-    const verifiedUser = { ...user, verified: true }
-    setUser(verifiedUser)
-    persist(verifiedUser, numbers, messages, password)
-    localStorage.removeItem('2nr_verify_token')
     localStorage.removeItem('2nr_pending_email')
+    setPendingEmail(null)
+
+    const newToken = res.data?.token || res.data?.result?.token
+    if (newToken) api.setToken(newToken)
+
+    await refreshProfile()
+
+    // Mark verified locally if profile didn't update yet
+    setUser((prev) => (prev ? { ...prev, verified: true } : prev))
+
     return { success: true }
   }
 
-  const logout = () => {
-    setUser(null)
-    // keep data in localStorage so user can log back in
-  }
-
-  const changePassword = async (oldPass: string, newPass: string) => {
-    if (oldPass !== password) return { success: false, error: 'Current password is incorrect.' }
-    if (newPass.length < 6) return { success: false, error: 'New password too short.' }
-    setPassword(newPass)
-    persist(user, numbers, messages, newPass)
-    return { success: true }
-  }
-
-  const deleteAccount = () => {
-    localStorage.removeItem(STORAGE_KEY)
-    localStorage.removeItem('2nr_verify_token')
-    localStorage.removeItem('2nr_pending_email')
+  const logout = async () => {
+    try {
+      await api.apiLogout()
+    } catch {}
+    api.setToken(null)
     setUser(null)
     setNumbers([])
     setMessages([])
-    setPassword('')
   }
 
-  const reserveNumber = (name: string) => {
-    const prefixes = ['459', '450', '732', '501', '602', '783']
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)]
-    const rest = Math.floor(Math.random() * 900000 + 100000).toString()
-    const number = prefix + rest
+  const changePassword = async (oldPass: string, newPass: string) => {
+    const res = await api.apiChangePassword(newPass, newPass, oldPass)
+    if (!res.ok) return { success: false, error: res.error || 'Failed to change password' }
+    return { success: true }
+  }
 
-    const now = new Date()
-    const to = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+  const deleteAccount = async () => {
+    const res = await api.apiDeactivate()
+    api.setToken(null)
+    setUser(null)
+    setNumbers([])
+    setMessages([])
+    if (!res.ok) return { success: false, error: res.error }
+    return { success: true }
+  }
 
-    const newNum: NumberItem = {
-      id: Math.floor(Math.random() * 900000) + 10000,
-      number,
-      name: name || 'My Number',
-      color: '#E63147',
-      reservationFrom: now.toISOString(),
-      reservationTo: to.toISOString(),
-      status: 1,
+  const reserveNumber = async (name: string) => {
+    // Real API requires Play Integrity token — will likely fail from browser
+    const res = await api.apiReserveNumber({ name })
+    if (!res.ok) {
+      return {
+        success: false,
+        error:
+          res.error ||
+          'Could not reserve number. The official app requires device integrity (Play Integrity). Web clients are usually blocked.',
+      }
     }
-
-    const updated = [newNum, ...numbers]
-    setNumbers(updated)
-
-    // Add a sample welcome message
-    const welcomeMsg: MessageItem = {
-      id: Date.now().toString(),
-      numberId: newNum.id,
-      number: newNum.number,
-      from: '2nr',
-      body: `Welcome! Your number ${number} is now active for 3 days. You can receive SMS and calls.`,
-      createdAt: now.toISOString(),
-      read: false,
-    }
-    const updatedMsgs = [welcomeMsg, ...messages]
-    setMessages(updatedMsgs)
-
-    persist(user, updated, updatedMsgs, password)
+    await refreshNumbers()
+    await refreshMessages()
+    return { success: true }
   }
 
-  const deleteNumber = (id: number) => {
-    const updated = numbers.filter((n) => n.id !== id)
-    setNumbers(updated)
-    persist(user, updated, messages, password)
+  const deleteNumber = async (id: number) => {
+    const res = await api.apiRemoveNumber(id)
+    if (!res.ok) return { success: false, error: res.error || 'Failed to delete number' }
+    setNumbers((prev) => prev.filter((n) => n.id !== id))
+    return { success: true }
   }
 
-  const markMessageRead = (id: string) => {
-    const updated = messages.map((m) => (m.id === id ? { ...m, read: true } : m))
-    setMessages(updated)
-    persist(user, numbers, updated, password)
+  const markMessageRead = async (id: string) => {
+    await api.apiMarkAsRead([id])
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, read: true } : m)))
   }
 
   return (
@@ -232,6 +290,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         numbers,
         messages,
         loading,
+        apiError,
         login,
         register,
         verifyEmail,
@@ -240,7 +299,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         deleteAccount,
         reserveNumber,
         deleteNumber,
+        refreshNumbers,
+        refreshMessages,
         markMessageRead,
+        refreshProfile,
       }}
     >
       {children}
