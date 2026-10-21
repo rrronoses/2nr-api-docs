@@ -1,102 +1,113 @@
 import { Link } from 'react-router-dom'
-import { Phone, Shield, MessageSquare, Zap } from 'lucide-react'
+import { Phone, Shield, MessageSquare, Zap, ArrowRight, Check } from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary-500/10 rounded-full blur-[120px] pointer-events-none" />
+
       {/* Navbar */}
-      <header className="border-b border-slate-800">
+      <header className="relative z-10 border-b border-slate-800/50">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center font-bold text-white text-sm">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-primary-500/30">
               2nr
             </div>
-            <span className="font-semibold text-white">2nr</span>
+            <span className="font-semibold text-white tracking-tight">2nr</span>
           </div>
-          <Link
-            to="/dashboard"
-            className="px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition"
-          >
-            Open App
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/login" className="px-4 py-2 text-sm text-slate-300 hover:text-white transition">
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium transition shadow-lg shadow-primary-500/20"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-500/10 text-primary-400 text-sm mb-6">
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-24 text-center">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-sm mb-8">
           <Zap size={14} />
-          Virtual Number Service
+          Virtual Polish Numbers
         </div>
-        <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+
+        <h1 className="text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6">
           Your second number,<br />
-          <span className="text-primary-500">instantly</span>
+          <span className="bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
+            ready in seconds
+          </span>
         </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10">
-          Get temporary Polish mobile numbers for SMS verification, calls, and privacy.
-          Powered by real-time API and modern infrastructure.
+
+        <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+          Get temporary mobile numbers for SMS verification, privacy, and testing.
+          Clean inbox, instant delivery, full control.
         </p>
-        <div className="flex items-center justify-center gap-4">
+
+        <div className="flex items-center justify-center gap-4 flex-wrap">
           <Link
-            to="/dashboard"
-            className="px-6 py-3 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium transition"
+            to="/register"
+            className="group px-7 py-3.5 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-medium transition shadow-xl shadow-primary-500/25 flex items-center gap-2"
           >
-            Get Started Free
+            Create free account
+            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition" />
           </Link>
-          <a
-            href="#features"
-            className="px-6 py-3 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-300 font-medium transition"
+          <Link
+            to="/login"
+            className="px-7 py-3.5 rounded-2xl border border-slate-700 hover:border-slate-500 text-slate-300 font-medium transition"
           >
-            Learn more
-          </a>
+            Log in
+          </Link>
+        </div>
+
+        <div className="mt-10 flex items-center justify-center gap-6 text-sm text-slate-500">
+          <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Free to start</span>
+          <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> No credit card</span>
+          <span className="flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Instant numbers</span>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-20">
-        <div className="grid md:grid-cols-3 gap-6">
-          <FeatureCard
-            icon={<Phone className="text-primary-500" size={24} />}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-28">
+        <div className="grid md:grid-cols-3 gap-5">
+          <Feature
+            icon={<Phone className="text-primary-400" size={22} />}
             title="Instant Numbers"
-            description="Reserve real Polish mobile numbers in seconds. Valid for 3 days with full SMS & call support."
+            desc="Reserve real Polish mobile numbers in one click. Valid for 3 days with full SMS support."
           />
-          <FeatureCard
-            icon={<MessageSquare className="text-primary-500" size={24} />}
-            title="SMS Inbox"
-            description="Receive verification codes and messages in real-time. Clean, organized inbox for every number."
+          <Feature
+            icon={<MessageSquare className="text-primary-400" size={22} />}
+            title="Real-time SMS"
+            desc="Receive verification codes instantly. Clean, searchable inbox for every number."
           />
-          <FeatureCard
-            icon={<Shield className="text-primary-500" size={24} />}
+          <Feature
+            icon={<Shield className="text-primary-400" size={22} />}
             title="Privacy First"
-            description="Keep your personal number private. Perfect for registrations, testing, and temporary needs."
+            desc="Keep your personal number private. Perfect for sign-ups, testing and temporary use."
           />
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-10 text-center text-slate-500 text-sm">
-        <p>© 2026 2nr – Second Number. Built with React + TypeScript.</p>
+      <footer className="relative z-10 border-t border-slate-800/50 py-8 text-center text-slate-600 text-sm">
+        © 2026 2nr — Built with React + TypeScript
       </footer>
     </div>
   )
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode
-  title: string
-  description: string
-}) {
+function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition">
-      <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-4">
+    <div className="group bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 hover:border-slate-700 hover:bg-slate-900/70 transition-all">
+      <div className="w-11 h-11 rounded-xl bg-slate-800/80 flex items-center justify-center mb-4 group-hover:scale-105 transition">
         {icon}
       </div>
       <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
-      <p className="text-slate-400 text-sm leading-relaxed">{description}</p>
+      <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
     </div>
   )
 }

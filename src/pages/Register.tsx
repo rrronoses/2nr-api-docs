@@ -1,0 +1,146 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Check } from 'lucide-react'
+
+export default function Register() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { register } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setLoading(true)
+    const res = await register(email.trim().toLowerCase(), password)
+    setLoading(false)
+
+    if (res.success) {
+      navigate('/verify-email')
+    } else {
+      setError(res.error || 'Registration failed')
+    }
+  }
+
+  const checks = [
+    { ok: password.length >= 6, label: 'At least 6 characters' },
+    { ok: /[A-Z]/.test(password), label: 'Uppercase letter' },
+    { ok: /[a-z]/.test(password), label: 'Lowercase letter' },
+    { ok: /[0-9]/.test(password), label: 'Number' },
+    { ok: /[?!@#$%^&*()<>+{}|_-]/.test(password), label: 'Special character' },
+  ]
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-950 relative py-12">
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-primary-500/8 rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center font-bold text-white shadow-lg shadow-primary-500/30">
+              2nr
+            </div>
+          </Link>
+          <h1 className="text-2xl font-bold text-white">Create account</h1>
+          <p className="text-slate-400 mt-1.5 text-sm">Start using virtual numbers in minutes</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-7 space-y-5 shadow-2xl">
+          {error && (
+            <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-1.5">Email</label>
+            <div className="relative">
+              <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-primary-500 text-white text-sm placeholder:text-slate-600 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-1.5">Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type={show ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a strong password"
+                className="w-full pl-10 pr-11 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-primary-500 text-white text-sm placeholder:text-slate-600 transition"
+              />
+              <button type="button" onClick={() => setShow(!show)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                {show ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            {password && (
+              <div className="mt-3 space-y-1.5">
+                {checks.map((c) => (
+                  <div key={c.label} className={`flex items-center gap-2 text-xs ${
+                    c.ok ? 'text-emerald-400' : 'text-slate-500'
+                  }`}>
+                    <Check size={12} />
+                    {c.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-400 mb-1.5">Confirm password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type={show ? 'text' : 'password'}
+                required
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Repeat password"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-700 focus:border-primary-500 text-white text-sm placeholder:text-slate-600 transition"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-primary-500 hover:bg-primary-600 disabled:opacity-60 text-white font-medium transition flex items-center justify-center gap-2 shadow-lg shadow-primary-500/20"
+          >
+            {loading ? 'Creating account...' : 'Create account'}
+            {!loading && <ArrowRight size={16} />}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-slate-500 mt-6">
+          Already have an account?{' '}
+          <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
+            Log in
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}

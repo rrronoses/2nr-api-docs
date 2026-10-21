@@ -1,49 +1,62 @@
-# 2nr – Second Number (Web App)
+# 2nr – Second Number (Complete Web App)
 
-Complete modern web application built with **React + TypeScript + Vite + Tailwind CSS**.
-
-Inspired by the real 2nr (drugi-numer) virtual number service, using realistic data and design patterns extracted from network captures.
+Beautiful, modern, full-featured virtual number web application built with **React + TypeScript + Vite + Tailwind CSS**.
 
 ## Features
 
-- Beautiful landing page
-- Dashboard with stats
-- Numbers management (list, copy, remove)
-- SMS inbox with real message examples
-- User profile page
-- Fully typed with TypeScript
-- Responsive dark UI
+### Authentication
+- Register with strong password validation
+- Email verification flow (simulated)
+- Login / Logout
+- Change password
+- Delete account
+
+### Numbers
+- Reserve new Polish mobile numbers
+- Copy number to clipboard
+- Delete numbers
+- 3-day reservation window
+
+### Messages
+- SMS inbox
+- Open individual messages
+- Unread badges & mark as read
+
+### UI
+- Stylish dark design
+- Smooth transitions
+- Fully responsive
+- Clean typography
 
 ## Tech Stack
 
 - React 18 + TypeScript
 - Vite
 - Tailwind CSS
-- React Router
+- React Router v6
 - Lucide Icons
+- LocalStorage persistence
 
-## Development
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build for production
+## Build
 
 ```bash
 npm run build
 ```
 
-The `dist/` folder is ready for Cloudflare Pages.
-
 ## Deploy to Cloudflare Pages
 
-1. Connect this repository in Cloudflare Pages
+1. Connect this repo in Cloudflare Pages
 2. Build command: `npm run build`
 3. Output directory: `dist`
 4. Deploy
 
 ---
 
-Built from deep analysis of real HAR captures (October 2026).
+Inspired by the real 2nr service and network analysis (October 2026).

@@ -1,71 +1,66 @@
-import { MessageSquare, CheckCircle } from 'lucide-react'
-
-const messages = [
-  {
-    id: '82674150',
-    number: '459074453',
-    from: 'IMO',
-    body: '<#> Your imo verification code is 2584.\nDO NOT share with anyone else to prevent account being compromised.\nLGIS0nvV16S',
-    createdAt: '2026-10-21T07:06:01.015Z',
-    read: true,
-  },
-  {
-    id: '82674100',
-    number: '459197008',
-    from: 'WhatsApp',
-    body: 'Your WhatsApp code is 847291. Do not share this code with anyone.',
-    createdAt: '2026-10-21T06:42:18.000Z',
-    read: true,
-  },
-  {
-    id: '82674050',
-    number: '450417115',
-    from: 'Telegram',
-    body: 'Telegram code: 593014\n\nDo not give this code to anyone, even if they say they are from Telegram!',
-    createdAt: '2026-10-20T19:15:33.000Z',
-    read: true,
-  },
-]
+import { Link } from 'react-router-dom'
+import { MessageSquare, ChevronRight } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export default function Messages() {
+  const { messages } = useAuth()
+
   return (
-    <div className="p-8">
+    <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Messages</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Messages</h1>
         <p className="text-slate-400 mt-1">SMS inbox for all your numbers</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {messages.map((msg) => (
-          <div
+          <Link
             key={msg.id}
-            className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition"
+            to={`/messages/${msg.id}`}
+            className="block bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 hover:border-slate-700 hover:bg-slate-900/80 transition group"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                  <MessageSquare size={16} className="text-blue-400" />
-                </div>
-                <div>
-                  <div className="font-medium text-white">{msg.from}</div>
-                  <div className="text-xs text-slate-500">to {msg.number}</div>
-                </div>
+            <div className="flex items-start gap-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                msg.read ? 'bg-slate-800' : 'bg-primary-500/15'
+              }`}>
+                <MessageSquare size={18} className={msg.read ? 'text-slate-500' : 'text-primary-400'} />
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                {msg.read && <CheckCircle size={14} className="text-emerald-500" />}
-                {new Date(msg.createdAt).toLocaleString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-medium ${
+                      msg.read ? 'text-slate-300' : 'text-white'
+                    }`}>
+                      {msg.from}
+                    </span>
+                    {!msg.read && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-500 shrink-0">
+                    {new Date(msg.createdAt).toLocaleString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500 truncate">{msg.body}</p>
+                <div className="text-xs text-slate-600 mt-1.5">to {msg.number}</div>
               </div>
+              <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 mt-3 shrink-0 transition" />
             </div>
-            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line pl-13">
-              {msg.body}
-            </p>
-          </div>
+          </Link>
         ))}
+
+        {messages.length === 0 && (
+          <div className="text-center py-20 bg-slate-900/30 border border-dashed border-slate-800 rounded-2xl">
+            <MessageSquare size={40} className="mx-auto mb-4 text-slate-600" />
+            <p className="text-slate-400">No messages yet</p>
+            <p className="text-slate-600 text-sm mt-1">Reserve a number to start receiving SMS</p>
+          </div>
+        )}
       </div>
     </div>
   )
