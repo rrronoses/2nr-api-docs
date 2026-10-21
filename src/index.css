@@ -4,9 +4,25 @@
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: #020617;
-  color: #f1f5f9;
   min-height: 100vh;
+}
+
+/* Light mode defaults */
+body {
+  @apply bg-slate-50 text-slate-900;
+}
+
+.dark body,
+html.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
 }
 
 ::-webkit-scrollbar {
@@ -17,16 +33,10 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  @apply bg-slate-300 dark:bg-slate-600;
   border-radius: 3px;
 }
 
 input, button, select, textarea {
   outline: none;
-}
-
-.glass {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
 }
